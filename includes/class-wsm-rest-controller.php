@@ -212,7 +212,44 @@ class WSM_REST_Controller {
 	 * @return WP_REST_Response|WP_Error
 	 */
 	public function download_export( WP_REST_Request $request ) {
-		$job = $this->job_store->get_job( $request['job_id'] );
+		$result = $this->stream_export_package( $request['job_id'] );
+		if ( is_wp_error( $result ) ) {
+			return $result;
+		}
+
+		exit;
+	}
+
+	/**
+	 * Download an export package through admin-post.php.
+	 *
+	 * @return void
+	 */
+	public function download_export_admin_post() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( esc_html__( 'You do not have permission to download this export.', 'wp-site-migrator' ), esc_html__( 'Export download failed', 'wp-site-migrator' ), array( 'response' => 403 ) );
+		}
+
+		check_admin_referer( 'wsm_download_export' );
+
+		$job_id = isset( $_GET['job_id'] ) ? sanitize_text_field( wp_unslash( $_GET['job_id'] ) ) : '';
+		$result = $this->stream_export_package( $job_id );
+
+		if ( is_wp_error( $result ) ) {
+			wp_die( esc_html( $result->get_error_message() ), esc_html__( 'Export download failed', 'wp-site-migrator' ), array( 'response' => 400 ) );
+		}
+
+		exit;
+	}
+
+	/**
+	 * Stream an export package to the current response.
+	 *
+	 * @param string $job_id Job id.
+	 * @return true|WP_Error
+	 */
+	private function stream_export_package( $job_id ) {
+		$job = $this->job_store->get_job( $job_id );
 		if ( is_wp_error( $job ) ) {
 			return $job;
 		}
@@ -221,18 +258,80 @@ class WSM_REST_Controller {
 			return new WP_Error( 'wsm_export_not_ready', __( 'Export package is not ready yet.', 'wp-site-migrator' ), array( 'status' => 409 ) );
 		}
 
-		$path = $this->job_store->get_package_path( $request['job_id'] );
+		$path = $this->job_store->get_package_path( $job_id );
 		if ( ! is_file( $path ) || ! is_readable( $path ) ) {
 			return new WP_Error( 'wsm_export_missing', __( 'Export package file was not found.', 'wp-site-migrator' ), array( 'status' => 404 ) );
 		}
 
-		$file_name = 'wp-site-migration-' . sanitize_file_name( home_url() ) . '-' . gmdate( 'Ymd-His' ) . '.zip';
+		$file_name = $this->export_file_name();
+		$file_size = filesize( $path );
+		if ( false === $file_size ) {
+			return new WP_Error( 'wsm_export_size_failed', __( 'Could not read export package size.', 'wp-site-migrator' ), array( 'status' => 500 ) );
+		}
+
+		$handle = fopen( $path, 'rb' );
+		if ( ! $handle ) {
+			return new WP_Error( 'wsm_export_open_failed', __( 'Could not open export package for download.', 'wp-site-migrator' ), array( 'status' => 500 ) );
+		}
+
+		if ( headers_sent() ) {
+			fclose( $handle );
+			return new WP_Error( 'wsm_headers_sent', __( 'Could not start the download because output was already sent.', 'wp-site-migrator' ), array( 'status' => 500 ) );
+		}
+
+		$this->prepare_download_response();
+
+		status_header( 200 );
 		nocache_headers();
 		header( 'Content-Type: application/zip' );
+		header( 'Content-Transfer-Encoding: binary' );
 		header( 'Content-Disposition: attachment; filename="' . $file_name . '"' );
-		header( 'Content-Length: ' . filesize( $path ) );
-		readfile( $path );
-		exit;
+		header( 'Content-Length: ' . $file_size );
+		header( 'X-Content-Type-Options: nosniff' );
+
+		while ( ! feof( $handle ) ) {
+			echo fread( $handle, 1024 * 1024 );
+			flush();
+		}
+
+		fclose( $handle );
+
+		return true;
+	}
+
+	/**
+	 * Prepare PHP output handling for a file download.
+	 *
+	 * @return void
+	 */
+	private function prepare_download_response() {
+		if ( function_exists( 'wp_raise_memory_limit' ) ) {
+			wp_raise_memory_limit( 'admin' );
+		}
+
+		if ( function_exists( 'set_time_limit' ) ) {
+			@set_time_limit( 0 );
+		}
+
+		@ini_set( 'zlib.output_compression', 'Off' );
+
+		while ( ob_get_level() > 0 ) {
+			@ob_end_clean();
+		}
+	}
+
+	/**
+	 * Build a safe export file name.
+	 *
+	 * @return string
+	 */
+	private function export_file_name() {
+		$host = wp_parse_url( home_url(), PHP_URL_HOST );
+		if ( ! $host ) {
+			$host = 'wordpress-site';
+		}
+
+		return sanitize_file_name( 'wp-site-migration-' . $host . '-' . gmdate( 'Ymd-His' ) . '.zip' );
 	}
 
 	/**

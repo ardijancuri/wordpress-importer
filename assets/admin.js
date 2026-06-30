@@ -95,7 +95,12 @@
 			.then(function (job) {
 				state.exportJobId = job.id;
 				renderJob(job);
-				els['wsm-download-export'].href = api.restUrl + '/export/download/' + encodeURIComponent(job.id) + '?_wpnonce=' + encodeURIComponent(api.nonce);
+				els['wsm-download-export'].href =
+					api.downloadUrl +
+					'?action=wsm_download_export&job_id=' +
+					encodeURIComponent(job.id) +
+					'&_wpnonce=' +
+					encodeURIComponent(api.downloadNonce);
 				els['wsm-download-export'].classList.remove('wsm-hidden');
 			})
 			.catch(function (error) {

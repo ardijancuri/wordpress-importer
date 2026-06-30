@@ -85,6 +85,7 @@ final class WSM_Plugin {
 		add_action( 'admin_menu', array( $this->admin, 'register_menu' ) );
 		add_action( 'admin_enqueue_scripts', array( $this->admin, 'enqueue_assets' ) );
 		add_action( 'rest_api_init', array( $this->rest_controller, 'register_routes' ) );
+		add_action( 'admin_post_wsm_download_export', array( $this->rest_controller, 'download_export_admin_post' ) );
 	}
 
 	/**

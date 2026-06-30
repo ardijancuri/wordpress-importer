@@ -46,6 +46,8 @@ class WSM_Admin {
 			array(
 				'restUrl'    => esc_url_raw( rest_url( WSM_Plugin::REST_NAMESPACE ) ),
 				'nonce'      => wp_create_nonce( 'wp_rest' ),
+				'downloadUrl' => esc_url_raw( admin_url( 'admin-post.php' ) ),
+				'downloadNonce' => wp_create_nonce( 'wsm_download_export' ),
 				'homeUrl'    => home_url(),
 				'adminUrl'   => admin_url(),
 				'pluginName' => __( 'WP Site Migrator', 'wp-site-migrator' ),
