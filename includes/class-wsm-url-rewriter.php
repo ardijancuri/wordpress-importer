@@ -69,9 +69,13 @@ class WSM_URL_Rewriter {
 		}
 
 		if ( function_exists( 'is_serialized' ) && is_serialized( $value ) ) {
-			$unserialized = @unserialize( trim( $value ) );
-			if ( false !== $unserialized || 'b:0;' === trim( $value ) ) {
-				return serialize( $this->rewrite_value( $unserialized ) );
+			try {
+				$unserialized = @unserialize( trim( $value ), array( 'allowed_classes' => false ) );
+				if ( false !== $unserialized || 'b:0;' === trim( $value ) ) {
+					return serialize( $this->rewrite_value( $unserialized ) );
+				}
+			} catch ( Throwable $e ) {
+				return strtr( $value, $this->replacements );
 			}
 		}
 

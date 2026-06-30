@@ -25,6 +25,7 @@ class WSM_Preflight {
 		$checks[] = $this->check( 'ziparchive', class_exists( 'ZipArchive' ), __( 'ZipArchive available', 'wp-site-migrator' ), __( 'The PHP ZipArchive extension is required.', 'wp-site-migrator' ), true );
 		$checks[] = $this->check( 'uploads_available', empty( $upload_dir['error'] ), __( 'Uploads directory available', 'wp-site-migrator' ), empty( $upload_dir['error'] ) ? '' : $upload_dir['error'], true );
 		$checks[] = $this->check( 'uploads_writable', empty( $upload_dir['error'] ) && wp_is_writable( $upload_dir['basedir'] ), __( 'Uploads directory writable', 'wp-site-migrator' ), __( 'The uploads directory must be writable for packages and imports.', 'wp-site-migrator' ), true );
+		$checks[] = $this->check( 'wp_content_writable', defined( 'WP_CONTENT_DIR' ) && wp_is_writable( WP_CONTENT_DIR ), __( 'wp-content directory writable', 'wp-site-migrator' ), __( 'The wp-content directory must be writable so import jobs survive uploads replacement.', 'wp-site-migrator' ), true );
 
 		$free_space = $this->disk_free_space( empty( $upload_dir['error'] ) ? $upload_dir['basedir'] : ABSPATH );
 		$checks[]   = array(

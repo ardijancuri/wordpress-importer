@@ -195,6 +195,10 @@ class WSM_Job_Store {
 	 * @return string
 	 */
 	public function get_root_dir() {
+		if ( defined( 'WP_CONTENT_DIR' ) && wp_is_writable( WP_CONTENT_DIR ) ) {
+			return trailingslashit( WP_CONTENT_DIR ) . self::ROOT_DIR_NAME;
+		}
+
 		$upload_dir = $this->get_upload_dir();
 		return trailingslashit( $upload_dir['basedir'] ) . self::ROOT_DIR_NAME;
 	}

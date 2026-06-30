@@ -173,7 +173,16 @@ class WSM_REST_Controller {
 		}
 
 		$archive = new WSM_Archive( $this->job_store, $this->logger );
-		$result  = $archive->export( $job['id'] );
+		$completed = false;
+		$this->register_fatal_guard( $job['id'], $completed );
+		try {
+			$result = $archive->export( $job['id'] );
+			$completed = true;
+		} catch ( Throwable $e ) {
+			$this->record_runtime_failure( $job['id'], $e );
+			return new WP_Error( 'wsm_export_runtime_error', $e->getMessage(), array( 'status' => 500 ) );
+		}
+
 		if ( is_wp_error( $result ) ) {
 			return $result;
 		}
@@ -362,12 +371,104 @@ class WSM_REST_Controller {
 		}
 
 		$archive = new WSM_Archive( $this->job_store, $this->logger );
-		$result  = $archive->import( $job_id, $target_url );
+		$completed = false;
+		$this->register_fatal_guard( $job_id, $completed );
+		try {
+			$result = $archive->import( $job_id, $target_url );
+			$completed = true;
+		} catch ( Throwable $e ) {
+			$this->record_runtime_failure( $job_id, $e );
+			return new WP_Error( 'wsm_import_runtime_error', $e->getMessage(), array( 'status' => 500 ) );
+		}
+
 		if ( is_wp_error( $result ) ) {
 			return $result;
 		}
 
 		return rest_ensure_response( $this->format_job_response( $result ) );
+	}
+
+	/**
+	 * Record an otherwise fatal runtime failure in the job log.
+	 *
+	 * @param string    $job_id Job id.
+	 * @param Throwable $error Runtime error.
+	 * @return void
+	 */
+	private function record_runtime_failure( $job_id, Throwable $error ) {
+		$message = sprintf( '%s in %s:%d', $error->getMessage(), $error->getFile(), $error->getLine() );
+		$this->logger->log( $job_id, $message, 'error' );
+		$this->job_store->update_job(
+			$job_id,
+			array(
+				'status' => 'failed',
+				'errors' => array(
+					array(
+						'code'    => 'runtime_error',
+						'message' => $message,
+					),
+				),
+			)
+		);
+	}
+
+	/**
+	 * Register a shutdown guard for fatal PHP errors.
+	 *
+	 * @param string $job_id Job id.
+	 * @param bool   $completed Completion flag passed by reference.
+	 * @return void
+	 */
+	private function register_fatal_guard( $job_id, &$completed ) {
+		register_shutdown_function(
+			function () use ( $job_id, &$completed ) {
+				if ( $completed ) {
+					return;
+				}
+
+				$error = error_get_last();
+				if ( ! is_array( $error ) || empty( $error['type'] ) ) {
+					return;
+				}
+
+				$fatal_types = array( E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR, E_USER_ERROR );
+				if ( ! in_array( $error['type'], $fatal_types, true ) ) {
+					return;
+				}
+
+				$this->record_fatal_failure( $job_id, $error );
+			}
+		);
+	}
+
+	/**
+	 * Record a fatal error captured during shutdown.
+	 *
+	 * @param string $job_id Job id.
+	 * @param array  $error Error details.
+	 * @return void
+	 */
+	private function record_fatal_failure( $job_id, array $error ) {
+		$message = sprintf(
+			'Fatal error: %s in %s:%d',
+			isset( $error['message'] ) ? $error['message'] : __( 'Unknown fatal error', 'wp-site-migrator' ),
+			isset( $error['file'] ) ? $error['file'] : __( 'unknown file', 'wp-site-migrator' ),
+			isset( $error['line'] ) ? (int) $error['line'] : 0
+		);
+
+		$this->logger->log( $job_id, $message, 'error' );
+		$this->job_store->update_job(
+			$job_id,
+			array(
+				'status' => 'failed',
+				'errors' => array(
+					array(
+						'code'    => 'fatal_error',
+						'message' => $message,
+					),
+				),
+			)
+		);
 	}
 
 	/**

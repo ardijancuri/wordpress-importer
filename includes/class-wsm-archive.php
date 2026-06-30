@@ -276,6 +276,12 @@ class WSM_Archive {
 			)
 		);
 
+		$preflight = new WSM_Preflight();
+		$checks    = $preflight->run();
+		if ( empty( $checks['ok'] ) ) {
+			return $this->fail_job( $job_id, new WP_Error( 'wsm_preflight_failed', __( 'Preflight checks failed.', 'wp-site-migrator' ) ) );
+		}
+
 		$manifest = $this->validate_import_package( $job_id );
 		if ( is_wp_error( $manifest ) ) {
 			return $this->fail_job( $job_id, $manifest );

@@ -28,7 +28,7 @@ The package excludes WordPress core, `wp-config.php`, database credentials, salt
 
 == Security ==
 
-Only administrators with `manage_options` can use the plugin. REST requests require WordPress REST nonces. Migration packages are stored in randomized protected folders under uploads, and imports validate checksums before replacing data.
+Only administrators with `manage_options` can use the plugin. REST requests require WordPress REST nonces. Migration packages are stored in randomized protected folders under `wp-content`, and imports validate checksums before replacing data.
 
 == Installation ==
 
