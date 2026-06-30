@@ -1,0 +1,103 @@
+.wsm-wrap {
+	max-width: 1180px;
+}
+
+.wsm-layout {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 16px;
+	margin-top: 16px;
+}
+
+.wsm-panel {
+	background: #fff;
+	border: 1px solid #c3c4c7;
+	border-radius: 6px;
+	padding: 18px;
+}
+
+.wsm-panel h2 {
+	margin-top: 0;
+}
+
+.wsm-status-panel {
+	margin-top: 16px;
+}
+
+.wsm-import-actions,
+.wsm-panel label {
+	display: block;
+	margin-top: 14px;
+}
+
+.wsm-panel input[type="file"],
+.wsm-panel input[type="url"],
+.wsm-panel input[type="text"] {
+	margin-top: 6px;
+	max-width: 100%;
+}
+
+.wsm-danger-text {
+	color: #8a2424;
+	font-weight: 600;
+}
+
+.button-danger {
+	margin-top: 14px !important;
+}
+
+.wsm-hidden {
+	display: none !important;
+}
+
+.wsm-checks {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+	gap: 10px;
+}
+
+.wsm-check {
+	border: 1px solid #dcdcde;
+	border-radius: 6px;
+	padding: 10px 12px;
+}
+
+.wsm-check strong {
+	display: block;
+	margin-bottom: 4px;
+}
+
+.wsm-check-ok {
+	border-left: 4px solid #00a32a;
+}
+
+.wsm-check-fail {
+	border-left: 4px solid #d63638;
+}
+
+.wsm-check-warn {
+	border-left: 4px solid #dba617;
+}
+
+.wsm-job-summary {
+	background: #f6f7f7;
+	border: 1px solid #dcdcde;
+	border-radius: 6px;
+	padding: 12px;
+}
+
+.wsm-log {
+	background: #101517;
+	border-radius: 6px;
+	color: #e9f0f2;
+	max-height: 320px;
+	overflow: auto;
+	padding: 14px;
+	white-space: pre-wrap;
+}
+
+@media (max-width: 782px) {
+	.wsm-layout {
+		grid-template-columns: 1fr;
+	}
+}
