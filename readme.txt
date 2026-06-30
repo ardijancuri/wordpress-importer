@@ -1,5 +1,5 @@
 === WP Site Migrator ===
-Contributors: codex
+Contributors: oninova
 Tags: migration, export, import, database, backup
 Requires at least: 6.0
 Tested up to: 6.8

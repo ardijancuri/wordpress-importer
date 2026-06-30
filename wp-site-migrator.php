@@ -3,7 +3,7 @@
  * Plugin Name: WP Site Migrator
  * Description: Export and import a complete single-site WordPress install with database, media, themes, and plugins.
  * Version: 0.1.0
- * Author: Codex
+ * Author: Oninova
  * Requires at least: 6.0
  * Requires PHP: 7.4
  * Text Domain: wp-site-migrator
