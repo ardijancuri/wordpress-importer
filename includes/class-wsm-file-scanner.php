@@ -100,7 +100,7 @@ class WSM_File_Scanner {
 				}
 
 				$path = $dir . '/' . $item;
-				if ( $this->should_skip_path( $path, $item ) ) {
+				if ( $this->should_skip_path( $section, $path, $item ) ) {
 					continue;
 				}
 
@@ -127,16 +127,24 @@ class WSM_File_Scanner {
 	/**
 	 * Check whether a path should be skipped.
 	 *
+	 * @param string $section Archive section.
 	 * @param string $path Path.
 	 * @param string $basename Basename.
 	 * @return bool
 	 */
-	private function should_skip_path( $path, $basename ) {
+	private function should_skip_path( $section, $path, $basename ) {
 		$basename = strtolower( $basename );
-		$skip_dir_names = array( '.git', '.svn', '.hg', 'cache', 'caches', 'log', 'logs', 'upgrade', 'updraft', 'backups', 'backup' );
+		$always_skip_dir_names = array( '.git', '.svn', '.hg' );
 
-		if ( in_array( $basename, $skip_dir_names, true ) ) {
+		if ( in_array( $basename, $always_skip_dir_names, true ) ) {
 			return true;
+		}
+
+		if ( 'uploads' === $section ) {
+			$uploads_skip_dir_names = array( 'cache', 'caches', 'log', 'logs', 'upgrade', 'updraft', 'backups', 'backup' );
+			if ( in_array( $basename, $uploads_skip_dir_names, true ) ) {
+				return true;
+			}
 		}
 
 		if ( 0 === strpos( basename( $path ), 'wsm-' ) ) {
