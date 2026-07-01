@@ -74,8 +74,8 @@ class WSM_Admin {
 				<span class="wsm-version"><?php echo esc_html( WSM_VERSION ); ?></span>
 			</div>
 
-			<div class="wsm-layout">
-				<section class="wsm-panel wsm-export-panel">
+			<div class="wsm-bento">
+				<section class="wsm-panel wsm-export-panel wsm-bento-export">
 					<div class="wsm-panel-heading">
 						<div>
 							<h2><?php esc_html_e( 'Export', 'wp-site-migrator' ); ?></h2>
@@ -89,7 +89,7 @@ class WSM_Admin {
 					</div>
 				</section>
 
-				<section class="wsm-panel wsm-import-panel">
+				<section class="wsm-panel wsm-import-panel wsm-bento-import">
 					<div class="wsm-panel-heading">
 						<div>
 							<h2><?php esc_html_e( 'Import', 'wp-site-migrator' ); ?></h2>
@@ -114,10 +114,8 @@ class WSM_Admin {
 						<button type="button" class="button button-primary button-danger" id="wsm-start-import" disabled><?php esc_html_e( 'Replace This Site', 'wp-site-migrator' ); ?></button>
 					</div>
 				</section>
-			</div>
 
-			<div class="wsm-operations">
-				<section class="wsm-panel wsm-status-panel">
+				<section class="wsm-panel wsm-status-panel wsm-bento-system">
 					<div class="wsm-panel-heading">
 						<div>
 							<h2><?php esc_html_e( 'System Status', 'wp-site-migrator' ); ?></h2>
@@ -127,7 +125,7 @@ class WSM_Admin {
 					<div id="wsm-preflight" class="wsm-checks"></div>
 				</section>
 
-				<section class="wsm-panel wsm-status-panel">
+				<section class="wsm-panel wsm-status-panel wsm-bento-job">
 					<div class="wsm-panel-heading">
 						<div>
 							<h2><?php esc_html_e( 'Job Status', 'wp-site-migrator' ); ?></h2>

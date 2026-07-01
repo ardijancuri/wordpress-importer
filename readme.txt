@@ -4,7 +4,7 @@ Tags: migration, export, import, database, backup
 Requires at least: 6.0
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 0.1.2
+Stable tag: 0.1.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -37,6 +37,9 @@ Only administrators with `manage_options` can use the plugin. REST requests requ
 3. Go to Tools > Site Migrator.
 
 == Changelog ==
+
+= 0.1.3 =
+Use a bento-style admin grid and fix destructive import button overflow in the import panel.
 
 = 0.1.2 =
 Refresh the admin migration UI, align destructive import controls, and add clearer progress states.
