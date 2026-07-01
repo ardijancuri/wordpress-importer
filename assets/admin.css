@@ -1,58 +1,55 @@
 .wsm-wrap {
-	--wsm-accent: #1d4ed8;
-	--wsm-accent-dark: #1e40af;
-	--wsm-danger: #b42318;
-	--wsm-danger-soft: #fef3f2;
-	--wsm-ink: #172033;
-	--wsm-muted: #667085;
-	--wsm-line: #d0d5dd;
-	--wsm-soft: #f8fafc;
-	--wsm-panel: #fff;
+	--wsm-wp-blue: #2271b1;
+	--wsm-wp-blue-dark: #135e96;
+	--wsm-wp-red: #b32d2e;
+	--wsm-wp-red-dark: #8a2424;
+	--wsm-border: #c3c4c7;
+	--wsm-border-light: #dcdcde;
+	--wsm-text: #1d2327;
+	--wsm-muted: #646970;
+	--wsm-bg-soft: #f6f7f7;
 	max-width: 1200px;
-	color: var(--wsm-ink);
 }
 
 .wsm-page-header {
 	align-items: flex-start;
-	border-bottom: 1px solid var(--wsm-line);
 	display: flex;
 	justify-content: space-between;
-	margin: 10px 0 18px;
-	padding: 0 0 18px;
+	margin: 16px 0 14px;
 }
 
 .wsm-page-header h1 {
-	color: var(--wsm-ink);
-	font-size: 30px;
-	font-weight: 700;
-	letter-spacing: 0;
-	line-height: 1.2;
+	color: var(--wsm-text);
+	font-size: 23px;
+	font-weight: 400;
+	line-height: 1.3;
 	margin: 0;
+	padding: 9px 0 4px;
 }
 
 .wsm-page-header p,
 .wsm-panel-heading p {
 	color: var(--wsm-muted);
-	font-size: 14px;
+	font-size: 13px;
 	line-height: 1.5;
-	margin: 6px 0 0;
+	margin: 3px 0 0;
 }
 
 .wsm-version {
-	background: #eef4ff;
-	border: 1px solid #c7d7fe;
-	border-radius: 999px;
-	color: var(--wsm-accent-dark);
+	background: #f0f0f1;
+	border: 1px solid var(--wsm-border);
+	color: #50575e;
+	display: inline-block;
 	font-size: 12px;
-	font-weight: 700;
-	line-height: 1;
-	padding: 8px 10px;
+	line-height: 1.4;
+	margin-top: 9px;
+	padding: 3px 7px;
 }
 
 .wsm-bento {
 	align-items: stretch;
 	display: grid;
-	gap: 16px;
+	gap: 12px;
 	grid-auto-flow: dense;
 	grid-template-columns: repeat(12, minmax(0, 1fr));
 }
@@ -68,65 +65,83 @@
 }
 
 .wsm-bento-import {
-	min-height: 282px;
+	min-height: 262px;
 }
 
 .wsm-bento-job {
-	min-height: 320px;
+	min-height: 300px;
 }
 
 .wsm-panel {
-	background: var(--wsm-panel);
-	border: 1px solid var(--wsm-line);
-	border-radius: 8px;
-	box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+	background: #fff;
+	border: 1px solid var(--wsm-border);
+	box-shadow: 0 1px 1px rgba(0, 0, 0, 0.04);
 	min-width: 0;
-	padding: 20px;
+	padding: 0;
 }
 
 .wsm-panel-heading {
 	align-items: flex-start;
+	border-bottom: 1px solid var(--wsm-border-light);
 	display: flex;
-	gap: 16px;
+	gap: 12px;
 	justify-content: space-between;
-	margin-bottom: 18px;
+	margin: 0;
+	padding: 12px;
 }
 
 .wsm-panel-heading h2 {
-	color: var(--wsm-ink);
-	font-size: 18px;
-	font-weight: 700;
-	line-height: 1.3;
+	color: var(--wsm-text);
+	font-size: 14px;
+	font-weight: 600;
+	line-height: 1.4;
 	margin: 0;
 }
 
 .wsm-step {
-	align-items: center;
-	background: var(--wsm-soft);
-	border: 1px solid var(--wsm-line);
-	border-radius: 999px;
-	color: #475467;
-	display: inline-flex;
+	background: #f6f7f7;
+	border: 1px solid var(--wsm-border-light);
+	color: #50575e;
+	display: inline-block;
 	font-size: 12px;
-	font-weight: 700;
-	height: 30px;
-	justify-content: center;
-	min-width: 30px;
+	font-weight: 400;
+	line-height: 1.4;
+	min-width: 22px;
+	padding: 2px 6px;
+	text-align: center;
 }
 
 .wsm-action-row,
-.wsm-file-row {
+.wsm-file-row,
+.wsm-danger-text,
+.wsm-import-grid,
+.wsm-checks,
+.wsm-progress-shell,
+.wsm-job-summary,
+.wsm-log {
+	margin-left: 12px;
+	margin-right: 12px;
+}
+
+.wsm-action-row {
 	align-items: center;
 	display: flex;
 	flex-wrap: wrap;
-	gap: 10px;
+	gap: 8px;
+	margin-bottom: 12px;
+	margin-top: 12px;
 }
 
 .wsm-file-row {
-	background: var(--wsm-soft);
-	border: 1px dashed #b8c1d1;
-	border-radius: 8px;
-	padding: 14px;
+	align-items: center;
+	background: var(--wsm-bg-soft);
+	border: 1px solid var(--wsm-border-light);
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin-bottom: 0;
+	margin-top: 12px;
+	padding: 10px;
 }
 
 .wsm-file-row input[type="file"] {
@@ -137,9 +152,10 @@
 .wsm-import-grid {
 	align-items: end;
 	display: grid;
-	gap: 12px;
-	grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(145px, 170px);
-	margin-top: 16px;
+	gap: 10px;
+	grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(138px, 164px);
+	margin-bottom: 12px;
+	margin-top: 12px;
 	min-width: 0;
 }
 
@@ -148,68 +164,46 @@
 }
 
 .wsm-field label {
-	color: #344054;
+	color: var(--wsm-text);
 	display: block;
-	font-size: 12px;
-	font-weight: 700;
-	margin: 0 0 6px;
-	text-transform: uppercase;
+	font-size: 13px;
+	font-weight: 600;
+	line-height: 1.4;
+	margin: 0 0 4px;
 }
 
 .wsm-field input[type="url"],
 .wsm-field input[type="text"] {
-	border-color: #c7ced8;
-	border-radius: 6px;
-	box-shadow: none;
 	box-sizing: border-box;
 	margin: 0;
-	min-height: 36px;
+	min-height: 30px;
 	width: 100%;
 }
 
-.wsm-field input:focus {
-	border-color: var(--wsm-accent);
-	box-shadow: 0 0 0 1px var(--wsm-accent);
-}
-
 .wsm-danger-text {
-	background: var(--wsm-danger-soft);
-	border-left: 4px solid var(--wsm-danger);
-	border-radius: 6px;
-	color: var(--wsm-danger);
-	font-weight: 700;
-	margin: 0 0 14px;
-	padding: 10px 12px;
-}
-
-.wsm-wrap .button {
-	border-radius: 6px;
-	min-height: 36px;
-}
-
-.wsm-wrap .button-primary {
-	background: var(--wsm-accent);
-	border-color: var(--wsm-accent);
-}
-
-.wsm-wrap .button-primary:hover,
-.wsm-wrap .button-primary:focus {
-	background: var(--wsm-accent-dark);
-	border-color: var(--wsm-accent-dark);
+	background: #fcf0f1;
+	border-left: 4px solid var(--wsm-wp-red);
+	color: var(--wsm-text);
+	font-size: 13px;
+	font-weight: 400;
+	line-height: 1.5;
+	margin-bottom: 12px;
+	margin-top: 12px;
+	padding: 8px 10px;
 }
 
 .wsm-wrap .button-danger {
 	align-self: end;
-	background: var(--wsm-danger);
-	border-color: var(--wsm-danger);
+	background: var(--wsm-wp-red);
+	border-color: var(--wsm-wp-red);
 	box-sizing: border-box;
 	color: #fff;
-	line-height: 1.25;
+	line-height: 2.15384615;
 	margin: 0;
-	min-width: 0;
 	max-width: 100%;
-	padding-left: 12px;
-	padding-right: 12px;
+	min-height: 30px;
+	min-width: 0;
+	padding: 0 10px;
 	text-align: center;
 	white-space: normal;
 	width: 100%;
@@ -217,9 +211,16 @@
 
 .wsm-wrap .button-danger:hover,
 .wsm-wrap .button-danger:focus {
-	background: #912018;
-	border-color: #912018;
+	background: var(--wsm-wp-red-dark);
+	border-color: var(--wsm-wp-red-dark);
 	color: #fff;
+}
+
+.wsm-wrap .button-danger:disabled,
+.wsm-wrap .button-danger.disabled {
+	background: #f6f7f7 !important;
+	border-color: #dcdcde !important;
+	color: #a7aaad !important;
 }
 
 .wsm-hidden {
@@ -228,77 +229,79 @@
 
 .wsm-checks {
 	display: grid;
-	gap: 10px;
-	grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+	gap: 8px;
+	grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+	margin-bottom: 12px;
+	margin-top: 12px;
 }
 
 .wsm-check {
-	background: var(--wsm-soft);
-	border: 1px solid #e4e7ec;
-	border-left: 4px solid #98a2b3;
-	border-radius: 6px;
-	padding: 11px 12px;
+	background: #fff;
+	border: 1px solid var(--wsm-border-light);
+	border-left: 4px solid #a7aaad;
+	padding: 8px 10px;
 }
 
 .wsm-check strong {
-	color: var(--wsm-ink);
+	color: var(--wsm-text);
 	display: block;
 	font-size: 13px;
-	margin-bottom: 4px;
+	font-weight: 600;
+	margin-bottom: 2px;
 }
 
 .wsm-check span {
 	color: var(--wsm-muted);
+	font-size: 13px;
 }
 
 .wsm-check-ok {
-	border-left-color: #16a34a;
+	border-left-color: #00a32a;
 }
 
 .wsm-check-fail {
-	border-left-color: var(--wsm-danger);
+	border-left-color: var(--wsm-wp-red);
 }
 
 .wsm-check-warn {
-	border-left-color: #d97706;
+	border-left-color: #dba617;
 }
 
 .wsm-progress-shell {
-	background: var(--wsm-soft);
-	border: 1px solid #e4e7ec;
-	border-radius: 8px;
+	background: var(--wsm-bg-soft);
+	border: 1px solid var(--wsm-border-light);
 	margin-bottom: 12px;
-	padding: 12px;
+	margin-top: 12px;
+	padding: 10px;
 }
 
 .wsm-progress-head {
 	align-items: center;
 	display: flex;
 	font-size: 13px;
-	font-weight: 700;
+	font-weight: 600;
 	justify-content: space-between;
 	margin-bottom: 8px;
 }
 
 .wsm-progress-head span:first-child {
-	color: #344054;
+	color: var(--wsm-text);
 }
 
 #wsm-progress-value {
-	color: var(--wsm-accent-dark);
+	color: var(--wsm-muted);
+	font-weight: 400;
 }
 
 .wsm-progress-track {
-	background: #e4e7ec;
-	border-radius: 999px;
-	height: 10px;
+	background: #dcdcde;
+	height: 8px;
 	overflow: hidden;
 	position: relative;
 }
 
 .wsm-progress-fill {
-	background: linear-gradient(90deg, var(--wsm-accent), #2563eb);
-	border-radius: inherit;
+	background: var(--wsm-wp-blue);
 	height: 100%;
 	transform: scaleX(0);
 	transform-origin: left center;
@@ -312,19 +315,18 @@
 }
 
 .wsm-progress-track.is-failed .wsm-progress-fill {
-	background: var(--wsm-danger);
+	background: var(--wsm-wp-red);
 }
 
 .wsm-job-summary {
 	background: #fff;
-	border: 1px solid #e4e7ec;
-	border-radius: 8px;
+	border: 1px solid var(--wsm-border-light);
 	display: grid;
 	gap: 8px;
 	grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
 	margin-bottom: 12px;
-	min-height: 45px;
-	padding: 12px;
+	min-height: 40px;
+	padding: 10px;
 }
 
 .wsm-job-summary.is-plain {
@@ -338,30 +340,30 @@
 .wsm-job-detail span {
 	color: var(--wsm-muted);
 	display: block;
-	font-size: 11px;
-	font-weight: 700;
-	text-transform: uppercase;
+	font-size: 12px;
+	font-weight: 600;
 }
 
 .wsm-job-detail strong {
-	color: var(--wsm-ink);
+	color: var(--wsm-text);
 	display: block;
 	font-size: 13px;
-	margin-top: 3px;
+	font-weight: 400;
+	margin-top: 2px;
 	overflow-wrap: anywhere;
 }
 
 .wsm-log {
-	background: #101828;
-	border: 1px solid #263244;
-	border-radius: 8px;
-	color: #f2f4f7;
+	background: #1d2327;
+	border: 1px solid #000;
+	color: #f0f0f1;
+	font-family: Consolas, Monaco, monospace;
 	font-size: 12px;
-	line-height: 1.55;
+	line-height: 1.5;
 	max-height: 260px;
 	min-height: 72px;
 	overflow: auto;
-	padding: 14px;
+	padding: 10px;
 	white-space: pre-wrap;
 }
 
@@ -410,7 +412,7 @@
 	.wsm-wrap .button-danger {
 		grid-column: 1 / -1;
 		justify-self: start;
-		max-width: 220px;
+		max-width: 180px;
 	}
 }
 
@@ -422,7 +424,7 @@
 
 	.wsm-version,
 	.wsm-step {
-		margin-top: 10px;
+		margin-top: 8px;
 	}
 
 	.wsm-file-row,
