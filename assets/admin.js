@@ -5,6 +5,7 @@
 	const state = {
 		exportJobId: '',
 		importJobId: '',
+		currentProgress: 0,
 	};
 
 	const els = {};
@@ -19,6 +20,10 @@
 			'wsm-confirmation',
 			'wsm-start-import',
 			'wsm-preflight',
+			'wsm-progress-label',
+			'wsm-progress-value',
+			'wsm-progress-track',
+			'wsm-progress-fill',
 			'wsm-job-summary',
 			'wsm-log',
 		].forEach(function (id) {
@@ -30,6 +35,7 @@
 		els['wsm-start-import'].addEventListener('click', startImport);
 		els['wsm-confirmation'].addEventListener('input', updateImportButton);
 
+		setProgress(0, 'Ready');
 		loadPreflight();
 	});
 
@@ -87,6 +93,7 @@
 		setBusy(els['wsm-start-export'], true);
 		els['wsm-download-export'].classList.add('wsm-hidden');
 		renderSummary('Creating export package...');
+		setProgress(12, 'Exporting package', true);
 
 		request('/export/start', {
 			method: 'POST',
@@ -121,7 +128,9 @@
 
 		setBusy(els['wsm-upload-import'], true);
 		renderSummary('Preparing upload...');
+		setProgress(2, 'Preparing upload');
 		state.importJobId = '';
+		updateImportButton();
 
 		request('/import/upload/start', {
 			method: 'POST',
@@ -136,6 +145,7 @@
 			})
 			.then(function () {
 				renderSummary('Validating package checksums...');
+				setProgress(82, 'Validating package', true);
 				return request('/import/validate', {
 					method: 'POST',
 					body: {
@@ -156,7 +166,7 @@
 	}
 
 	function uploadChunks(file, jobId, chunkSize) {
-		const total = Math.ceil(file.size / chunkSize);
+		const total = Math.max(1, Math.ceil(file.size / chunkSize));
 		let chain = Promise.resolve();
 
 		for (let index = 0; index < total; index++) {
@@ -164,6 +174,7 @@
 				const start = index * chunkSize;
 				const end = Math.min(start + chunkSize, file.size);
 				renderSummary('Uploading package chunk ' + (index + 1) + ' of ' + total + '...');
+				setProgress(8 + (index / total) * 68, 'Uploading package');
 				return readAsBase64(file.slice(start, end)).then(function (chunk) {
 					return request('/import/upload/chunk', {
 						method: 'POST',
@@ -207,6 +218,7 @@
 
 		setBusy(els['wsm-start-import'], true);
 		renderSummary('Replacing destination site...');
+		setProgress(88, 'Replacing site', true);
 
 		request('/import/start', {
 			method: 'POST',
@@ -227,41 +239,111 @@
 	}
 
 	function renderJob(job) {
-		const summary = [];
-		summary.push('Job: ' + job.id);
-		summary.push('Status: ' + (job.status || 'unknown'));
+		const summary = [
+			['Job', job.id],
+			['Status', job.status || 'unknown'],
+		];
 		if (job.phase) {
-			summary.push('Phase: ' + job.phase);
+			summary.push(['Phase', job.phase]);
 		}
 		if (job.package_size) {
-			summary.push('Package: ' + formatBytes(job.package_size));
+			summary.push(['Package', formatBytes(job.package_size)]);
 		}
 		if (job.uploaded_bytes) {
-			summary.push('Uploaded: ' + formatBytes(job.uploaded_bytes));
+			summary.push(['Uploaded', formatBytes(job.uploaded_bytes)]);
 		}
 		if (job.manifest_summary) {
-			summary.push('Source: ' + (job.manifest_summary.source_url || 'unknown'));
-			summary.push('Tables: ' + job.manifest_summary.table_count + ', files: ' + job.manifest_summary.file_count);
+			summary.push(['Source', job.manifest_summary.source_url || 'unknown']);
+			summary.push(['Package contents', job.manifest_summary.table_count + ' tables, ' + job.manifest_summary.file_count + ' files']);
 		}
 		if (job.errors && job.errors.length) {
-			summary.push('Error: ' + job.errors[0].message);
+			summary.push(['Error', job.errors[0].message]);
 		}
 
-		els['wsm-job-summary'].textContent = summary.join('\n');
+		els['wsm-job-summary'].classList.remove('is-plain');
+		els['wsm-job-summary'].innerHTML = summary
+			.map(function (item) {
+				return '<div class="wsm-job-detail"><span>' + escapeHtml(item[0]) + '</span><strong>' + escapeHtml(item[1]) + '</strong></div>';
+			})
+			.join('');
 		els['wsm-log'].textContent = (job.log || []).join('\n');
+		updateProgressFromJob(job);
 	}
 
 	function renderSummary(message) {
+		els['wsm-job-summary'].classList.add('is-plain');
 		els['wsm-job-summary'].textContent = message;
 	}
 
 	function renderError(message) {
+		els['wsm-job-summary'].classList.add('is-plain');
 		els['wsm-job-summary'].textContent = 'Error: ' + message;
+		setProgress(state.currentProgress || 100, 'Failed', false, true);
 	}
 
 	function setBusy(button, busy) {
 		button.disabled = busy;
 		button.classList.toggle('updating-message', busy);
+	}
+
+	function updateProgressFromJob(job) {
+		if (!job || !job.status) {
+			return;
+		}
+
+		if (job.status === 'failed') {
+			setProgress(state.currentProgress || 100, 'Failed', false, true);
+			return;
+		}
+
+		if (job.status === 'completed') {
+			setProgress(100, 'Completed');
+			return;
+		}
+
+		if (job.status === 'running') {
+			setProgress(job.phase === 'files' ? 72 : 35, job.phase === 'files' ? 'Adding files' : 'Exporting database', true);
+			return;
+		}
+
+		if (job.status === 'uploading') {
+			const expected = Number(job.expected_size || 0);
+			const uploaded = Number(job.uploaded_bytes || 0);
+			const ratio = expected > 0 ? Math.min(uploaded / expected, 1) : 0;
+			setProgress(8 + ratio * 68, 'Uploading package');
+			return;
+		}
+
+		if (job.status === 'uploaded') {
+			setProgress(78, 'Upload complete');
+			return;
+		}
+
+		if (job.status === 'validated') {
+			setProgress(85, 'Package validated');
+			return;
+		}
+
+		if (job.status === 'importing') {
+			const phaseProgress = {
+				validating: 86,
+				extracting: 90,
+				database: 94,
+				files: 98,
+			};
+			setProgress(phaseProgress[job.phase] || 88, job.phase ? 'Importing ' + job.phase : 'Importing site', true);
+		}
+	}
+
+	function setProgress(percent, label, indeterminate, failed) {
+		const normalized = Math.max(0, Math.min(100, Math.round(Number(percent) || 0)));
+		state.currentProgress = normalized;
+		els['wsm-progress-label'].textContent = label || 'Ready';
+		els['wsm-progress-value'].textContent = normalized + '%';
+		els['wsm-progress-fill'].style.transform = 'scaleX(' + normalized / 100 + ')';
+		els['wsm-progress-track'].setAttribute('aria-valuenow', String(normalized));
+		els['wsm-progress-track'].classList.toggle('is-indeterminate', Boolean(indeterminate));
+		els['wsm-progress-track'].classList.toggle('is-failed', Boolean(failed));
 	}
 
 	function formatBytes(bytes) {
@@ -273,5 +355,14 @@
 			unit++;
 		}
 		return value.toFixed(unit ? 1 : 0) + ' ' + units[unit];
+	}
+
+	function escapeHtml(value) {
+		return String(value)
+			.replace(/&/g, '&amp;')
+			.replace(/</g, '&lt;')
+			.replace(/>/g, '&gt;')
+			.replace(/"/g, '&quot;')
+			.replace(/'/g, '&#039;');
 	}
 })();

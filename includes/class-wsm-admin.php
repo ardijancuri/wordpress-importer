@@ -66,41 +66,87 @@ class WSM_Admin {
 		}
 		?>
 		<div class="wrap wsm-wrap">
-			<h1><?php esc_html_e( 'WP Site Migrator', 'wp-site-migrator' ); ?></h1>
+			<div class="wsm-page-header">
+				<div>
+					<h1><?php esc_html_e( 'WP Site Migrator', 'wp-site-migrator' ); ?></h1>
+					<p><?php esc_html_e( 'Move a single WordPress site with its database, media, themes, and plugins.', 'wp-site-migrator' ); ?></p>
+				</div>
+				<span class="wsm-version"><?php echo esc_html( WSM_VERSION ); ?></span>
+			</div>
 
 			<div class="wsm-layout">
-				<section class="wsm-panel">
-					<h2><?php esc_html_e( 'Export', 'wp-site-migrator' ); ?></h2>
-					<p><?php esc_html_e( 'Create a migration package containing this site database, uploads, themes, plugins, languages, and selected root files.', 'wp-site-migrator' ); ?></p>
-					<button type="button" class="button button-primary" id="wsm-start-export"><?php esc_html_e( 'Create Export Package', 'wp-site-migrator' ); ?></button>
-					<a class="button wsm-hidden" id="wsm-download-export" href="#" download><?php esc_html_e( 'Download Package', 'wp-site-migrator' ); ?></a>
+				<section class="wsm-panel wsm-export-panel">
+					<div class="wsm-panel-heading">
+						<div>
+							<h2><?php esc_html_e( 'Export', 'wp-site-migrator' ); ?></h2>
+							<p><?php esc_html_e( 'Create a portable package from this site.', 'wp-site-migrator' ); ?></p>
+						</div>
+						<span class="wsm-step">01</span>
+					</div>
+					<div class="wsm-action-row">
+						<button type="button" class="button button-primary" id="wsm-start-export"><?php esc_html_e( 'Create Export Package', 'wp-site-migrator' ); ?></button>
+						<a class="button wsm-hidden" id="wsm-download-export" href="#" download><?php esc_html_e( 'Download Package', 'wp-site-migrator' ); ?></a>
+					</div>
 				</section>
 
-				<section class="wsm-panel">
-					<h2><?php esc_html_e( 'Import', 'wp-site-migrator' ); ?></h2>
-					<p class="wsm-danger-text"><?php esc_html_e( 'Import permanently replaces matching destination database tables and site files. No destination backup is kept.', 'wp-site-migrator' ); ?></p>
-					<input type="file" id="wsm-import-file" accept=".zip,application/zip" />
-					<div class="wsm-import-actions">
+				<section class="wsm-panel wsm-import-panel">
+					<div class="wsm-panel-heading">
+						<div>
+							<h2><?php esc_html_e( 'Import', 'wp-site-migrator' ); ?></h2>
+							<p><?php esc_html_e( 'Upload a package and replace this site.', 'wp-site-migrator' ); ?></p>
+						</div>
+						<span class="wsm-step">02</span>
+					</div>
+					<p class="wsm-danger-text"><?php esc_html_e( 'This permanently replaces destination data and files.', 'wp-site-migrator' ); ?></p>
+					<div class="wsm-file-row">
+						<input type="file" id="wsm-import-file" accept=".zip,application/zip" />
 						<button type="button" class="button" id="wsm-upload-import"><?php esc_html_e( 'Upload and Validate', 'wp-site-migrator' ); ?></button>
 					</div>
-					<label for="wsm-target-url"><?php esc_html_e( 'Destination URL', 'wp-site-migrator' ); ?></label>
-					<input type="url" id="wsm-target-url" class="regular-text" value="<?php echo esc_attr( home_url() ); ?>" />
-					<label for="wsm-confirmation"><?php esc_html_e( 'Confirmation', 'wp-site-migrator' ); ?></label>
-					<input type="text" id="wsm-confirmation" class="regular-text" placeholder="<?php esc_attr_e( 'Type REPLACE SITE', 'wp-site-migrator' ); ?>" />
-					<button type="button" class="button button-primary button-danger" id="wsm-start-import" disabled><?php esc_html_e( 'Replace This Site', 'wp-site-migrator' ); ?></button>
+					<div class="wsm-import-grid">
+						<div class="wsm-field">
+							<label for="wsm-target-url"><?php esc_html_e( 'Destination URL', 'wp-site-migrator' ); ?></label>
+							<input type="url" id="wsm-target-url" class="regular-text" value="<?php echo esc_attr( home_url() ); ?>" />
+						</div>
+						<div class="wsm-field">
+							<label for="wsm-confirmation"><?php esc_html_e( 'Confirmation', 'wp-site-migrator' ); ?></label>
+							<input type="text" id="wsm-confirmation" class="regular-text" placeholder="<?php esc_attr_e( 'Type REPLACE SITE', 'wp-site-migrator' ); ?>" />
+						</div>
+						<button type="button" class="button button-primary button-danger" id="wsm-start-import" disabled><?php esc_html_e( 'Replace This Site', 'wp-site-migrator' ); ?></button>
+					</div>
 				</section>
 			</div>
 
-			<section class="wsm-panel wsm-status-panel">
-				<h2><?php esc_html_e( 'System Status', 'wp-site-migrator' ); ?></h2>
-				<div id="wsm-preflight" class="wsm-checks"></div>
-			</section>
+			<div class="wsm-operations">
+				<section class="wsm-panel wsm-status-panel">
+					<div class="wsm-panel-heading">
+						<div>
+							<h2><?php esc_html_e( 'System Status', 'wp-site-migrator' ); ?></h2>
+							<p><?php esc_html_e( 'Host checks for export and import jobs.', 'wp-site-migrator' ); ?></p>
+						</div>
+					</div>
+					<div id="wsm-preflight" class="wsm-checks"></div>
+				</section>
 
-			<section class="wsm-panel wsm-status-panel">
-				<h2><?php esc_html_e( 'Job Status', 'wp-site-migrator' ); ?></h2>
-				<div id="wsm-job-summary" class="wsm-job-summary"><?php esc_html_e( 'No migration job is running.', 'wp-site-migrator' ); ?></div>
-				<pre id="wsm-log" class="wsm-log"></pre>
-			</section>
+				<section class="wsm-panel wsm-status-panel">
+					<div class="wsm-panel-heading">
+						<div>
+							<h2><?php esc_html_e( 'Job Status', 'wp-site-migrator' ); ?></h2>
+							<p><?php esc_html_e( 'Current package, upload, and import activity.', 'wp-site-migrator' ); ?></p>
+						</div>
+					</div>
+					<div class="wsm-progress-shell">
+						<div class="wsm-progress-head">
+							<span id="wsm-progress-label"><?php esc_html_e( 'Ready', 'wp-site-migrator' ); ?></span>
+							<span id="wsm-progress-value">0%</span>
+						</div>
+						<div class="wsm-progress-track" id="wsm-progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+							<div class="wsm-progress-fill" id="wsm-progress-fill"></div>
+						</div>
+					</div>
+					<div id="wsm-job-summary" class="wsm-job-summary"><?php esc_html_e( 'No migration job is running.', 'wp-site-migrator' ); ?></div>
+					<pre id="wsm-log" class="wsm-log"></pre>
+				</section>
+			</div>
 		</div>
 		<?php
 	}

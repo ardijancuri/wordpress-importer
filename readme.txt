@@ -4,7 +4,7 @@ Tags: migration, export, import, database, backup
 Requires at least: 6.0
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 0.1.1
+Stable tag: 0.1.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -37,6 +37,9 @@ Only administrators with `manage_options` can use the plugin. REST requests requ
 3. Go to Tools > Site Migrator.
 
 == Changelog ==
+
+= 0.1.2 =
+Refresh the admin migration UI, align destructive import controls, and add clearer progress states.
 
 = 0.1.1 =
 Fix plugin/theme exports so required source folders named `cache` or `caches`, such as WooCommerce cache classes, are included. Improve import/download reliability.
