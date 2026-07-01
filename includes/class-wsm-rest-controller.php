@@ -463,7 +463,7 @@ class WSM_REST_Controller {
 		$params       = $request->get_json_params();
 		$job_id       = isset( $params['job_id'] ) ? sanitize_text_field( $params['job_id'] ) : '';
 		$confirmation = isset( $params['confirmation'] ) ? strtoupper( trim( (string) $params['confirmation'] ) ) : '';
-		$target_url   = isset( $params['target_url'] ) ? esc_url_raw( $params['target_url'] ) : home_url();
+		$target_url   = home_url();
 
 		if ( 'REPLACE SITE' !== $confirmation ) {
 			return new WP_Error( 'wsm_confirmation_required', __( 'Type REPLACE SITE to confirm destructive import.', 'wp-site-migrator' ), array( 'status' => 400 ) );

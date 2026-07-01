@@ -16,7 +16,6 @@
 			'wsm-download-export',
 			'wsm-import-file',
 			'wsm-upload-import',
-			'wsm-target-url',
 			'wsm-confirmation',
 			'wsm-start-import',
 			'wsm-preflight',
@@ -225,7 +224,6 @@
 			body: {
 				job_id: state.importJobId,
 				confirmation: els['wsm-confirmation'].value,
-				target_url: els['wsm-target-url'].value || api.homeUrl,
 			},
 		})
 			.then(renderJob)

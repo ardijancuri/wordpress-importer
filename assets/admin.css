@@ -160,7 +160,7 @@
 	align-items: start;
 	display: grid;
 	gap: 10px;
-	grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(138px, 164px);
+	grid-template-columns: minmax(0, 1fr) minmax(138px, 164px);
 	margin-bottom: 12px;
 	margin-top: 12px;
 	min-width: 0;
@@ -185,12 +185,6 @@
 	margin: 0;
 	min-height: 30px;
 	width: 100%;
-}
-
-.wsm-field .description {
-	color: var(--wsm-muted);
-	font-size: 12px;
-	margin: 4px 0 0;
 }
 
 .wsm-danger-text {

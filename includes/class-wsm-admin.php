@@ -48,7 +48,6 @@ class WSM_Admin {
 				'nonce'      => wp_create_nonce( 'wp_rest' ),
 				'downloadUrl' => esc_url_raw( admin_url( 'admin-post.php' ) ),
 				'downloadNonce' => wp_create_nonce( 'wsm_download_export' ),
-				'homeUrl'    => home_url(),
 				'adminUrl'   => admin_url(),
 				'pluginName' => __( 'WP Site Migrator', 'wp-site-migrator' ),
 			)
@@ -103,11 +102,6 @@ class WSM_Admin {
 						<button type="button" class="button" id="wsm-upload-import"><?php esc_html_e( 'Upload and Validate', 'wp-site-migrator' ); ?></button>
 					</div>
 					<div class="wsm-import-grid">
-						<div class="wsm-field">
-							<label for="wsm-target-url"><?php esc_html_e( 'Destination URL', 'wp-site-migrator' ); ?></label>
-							<input type="url" id="wsm-target-url" class="regular-text" value="<?php echo esc_attr( home_url() ); ?>" aria-describedby="wsm-target-url-help" />
-							<p class="description" id="wsm-target-url-help"><?php esc_html_e( 'Auto-filled. Used to replace old source-site links with this site address.', 'wp-site-migrator' ); ?></p>
-						</div>
 						<div class="wsm-field">
 							<label for="wsm-confirmation"><?php esc_html_e( 'Confirmation', 'wp-site-migrator' ); ?></label>
 							<input type="text" id="wsm-confirmation" class="regular-text" placeholder="<?php esc_attr_e( 'Type REPLACE SITE', 'wp-site-migrator' ); ?>" />
