@@ -75,8 +75,11 @@
 .wsm-panel {
 	background: #fff;
 	border: 1px solid var(--wsm-border);
+	border-radius: 6px;
 	box-shadow: 0 1px 1px rgba(0, 0, 0, 0.04);
+	margin-bottom: 0;
 	min-width: 0;
+	overflow: hidden;
 	padding: 0;
 }
 
@@ -88,6 +91,10 @@
 	justify-content: space-between;
 	margin: 0;
 	padding: 12px;
+}
+
+.wsm-panel.postbox .postbox-header {
+	border-bottom: 1px solid var(--wsm-border-light);
 }
 
 .wsm-panel-heading h2 {
@@ -150,7 +157,7 @@
 }
 
 .wsm-import-grid {
-	align-items: end;
+	align-items: start;
 	display: grid;
 	gap: 10px;
 	grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(138px, 164px);
@@ -180,6 +187,12 @@
 	width: 100%;
 }
 
+.wsm-field .description {
+	color: var(--wsm-muted);
+	font-size: 12px;
+	margin: 4px 0 0;
+}
+
 .wsm-danger-text {
 	background: #fcf0f1;
 	border-left: 4px solid var(--wsm-wp-red);
@@ -200,6 +213,7 @@
 	color: #fff;
 	line-height: 2.15384615;
 	margin: 0;
+	margin-top: 22px;
 	max-width: 100%;
 	min-height: 30px;
 	min-width: 0;
@@ -412,6 +426,7 @@
 	.wsm-wrap .button-danger {
 		grid-column: 1 / -1;
 		justify-self: start;
+		margin-top: 0;
 		max-width: 180px;
 	}
 }

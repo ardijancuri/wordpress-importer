@@ -75,10 +75,10 @@ class WSM_Admin {
 			</div>
 
 			<div class="wsm-bento">
-				<section class="wsm-panel wsm-export-panel wsm-bento-export">
-					<div class="wsm-panel-heading">
+				<section class="postbox wsm-panel wsm-export-panel wsm-bento-export">
+					<div class="postbox-header wsm-panel-heading">
 						<div>
-							<h2><?php esc_html_e( 'Export', 'wp-site-migrator' ); ?></h2>
+							<h2 class="hndle"><?php esc_html_e( 'Export', 'wp-site-migrator' ); ?></h2>
 							<p><?php esc_html_e( 'Create a portable package from this site.', 'wp-site-migrator' ); ?></p>
 						</div>
 						<span class="wsm-step">01</span>
@@ -89,10 +89,10 @@ class WSM_Admin {
 					</div>
 				</section>
 
-				<section class="wsm-panel wsm-import-panel wsm-bento-import">
-					<div class="wsm-panel-heading">
+				<section class="postbox wsm-panel wsm-import-panel wsm-bento-import">
+					<div class="postbox-header wsm-panel-heading">
 						<div>
-							<h2><?php esc_html_e( 'Import', 'wp-site-migrator' ); ?></h2>
+							<h2 class="hndle"><?php esc_html_e( 'Import', 'wp-site-migrator' ); ?></h2>
 							<p><?php esc_html_e( 'Upload a package and replace this site.', 'wp-site-migrator' ); ?></p>
 						</div>
 						<span class="wsm-step">02</span>
@@ -105,7 +105,8 @@ class WSM_Admin {
 					<div class="wsm-import-grid">
 						<div class="wsm-field">
 							<label for="wsm-target-url"><?php esc_html_e( 'Destination URL', 'wp-site-migrator' ); ?></label>
-							<input type="url" id="wsm-target-url" class="regular-text" value="<?php echo esc_attr( home_url() ); ?>" />
+							<input type="url" id="wsm-target-url" class="regular-text" value="<?php echo esc_attr( home_url() ); ?>" aria-describedby="wsm-target-url-help" />
+							<p class="description" id="wsm-target-url-help"><?php esc_html_e( 'Auto-filled. Used to replace old source-site links with this site address.', 'wp-site-migrator' ); ?></p>
 						</div>
 						<div class="wsm-field">
 							<label for="wsm-confirmation"><?php esc_html_e( 'Confirmation', 'wp-site-migrator' ); ?></label>
@@ -115,20 +116,20 @@ class WSM_Admin {
 					</div>
 				</section>
 
-				<section class="wsm-panel wsm-status-panel wsm-bento-system">
-					<div class="wsm-panel-heading">
+				<section class="postbox wsm-panel wsm-status-panel wsm-bento-system">
+					<div class="postbox-header wsm-panel-heading">
 						<div>
-							<h2><?php esc_html_e( 'System Status', 'wp-site-migrator' ); ?></h2>
+							<h2 class="hndle"><?php esc_html_e( 'System Status', 'wp-site-migrator' ); ?></h2>
 							<p><?php esc_html_e( 'Host checks for export and import jobs.', 'wp-site-migrator' ); ?></p>
 						</div>
 					</div>
 					<div id="wsm-preflight" class="wsm-checks"></div>
 				</section>
 
-				<section class="wsm-panel wsm-status-panel wsm-bento-job">
-					<div class="wsm-panel-heading">
+				<section class="postbox wsm-panel wsm-status-panel wsm-bento-job">
+					<div class="postbox-header wsm-panel-heading">
 						<div>
-							<h2><?php esc_html_e( 'Job Status', 'wp-site-migrator' ); ?></h2>
+							<h2 class="hndle"><?php esc_html_e( 'Job Status', 'wp-site-migrator' ); ?></h2>
 							<p><?php esc_html_e( 'Current package, upload, and import activity.', 'wp-site-migrator' ); ?></p>
 						</div>
 					</div>

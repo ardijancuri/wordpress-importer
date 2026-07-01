@@ -4,7 +4,7 @@ Tags: migration, export, import, database, backup
 Requires at least: 6.0
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 0.1.4
+Stable tag: 0.1.5
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -37,6 +37,9 @@ Only administrators with `manage_options` can use the plugin. REST requests requ
 3. Go to Tools > Site Migrator.
 
 == Changelog ==
+
+= 0.1.5 =
+Use WordPress postbox-style admin containers and clarify the Destination URL field.
 
 = 0.1.4 =
 Adjust the admin dashboard UI toward native WordPress metabox, typography, and button styles.
