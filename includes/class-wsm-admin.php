@@ -84,7 +84,7 @@ class WSM_Admin {
 					</div>
 					<div class="wsm-action-row">
 						<button type="button" class="button button-primary" id="wsm-start-export"><?php esc_html_e( 'Create Export Package', 'wp-site-migrator' ); ?></button>
-						<a class="button wsm-hidden" id="wsm-download-export" href="#" download><?php esc_html_e( 'Download Package', 'wp-site-migrator' ); ?></a>
+						<div class="wsm-downloads wsm-hidden" id="wsm-download-export"></div>
 					</div>
 				</section>
 
@@ -98,7 +98,7 @@ class WSM_Admin {
 					</div>
 					<p class="wsm-danger-text"><?php esc_html_e( 'This permanently replaces destination data and files.', 'wp-site-migrator' ); ?></p>
 					<div class="wsm-file-row">
-						<input type="file" id="wsm-import-file" accept=".zip,application/zip" />
+						<input type="file" id="wsm-import-file" accept=".zip,.json,application/zip,application/json" multiple />
 						<button type="button" class="button" id="wsm-upload-import"><?php esc_html_e( 'Upload and Validate', 'wp-site-migrator' ); ?></button>
 					</div>
 					<div class="wsm-import-grid">

@@ -86,6 +86,18 @@ final class WSM_Plugin {
 		add_action( 'admin_enqueue_scripts', array( $this->admin, 'enqueue_assets' ) );
 		add_action( 'rest_api_init', array( $this->rest_controller, 'register_routes' ) );
 		add_action( 'admin_post_wsm_download_export', array( $this->rest_controller, 'download_export_admin_post' ) );
+		add_action( 'wsm_site_migrator_run_job', array( $this, 'run_cron_job' ) );
+	}
+
+	/**
+	 * Run one scheduled background job tick.
+	 *
+	 * @param string $job_id Job id.
+	 * @return void
+	 */
+	public function run_cron_job( $job_id ) {
+		$batch = new WSM_Batch_Migrator( $this->job_store, $this->logger );
+		$batch->run_job( $job_id );
 	}
 
 	/**
@@ -101,6 +113,7 @@ final class WSM_Plugin {
 		require_once WSM_PLUGIN_DIR . 'includes/class-wsm-url-rewriter.php';
 		require_once WSM_PLUGIN_DIR . 'includes/class-wsm-database.php';
 		require_once WSM_PLUGIN_DIR . 'includes/class-wsm-archive.php';
+		require_once WSM_PLUGIN_DIR . 'includes/class-wsm-batch-migrator.php';
 		require_once WSM_PLUGIN_DIR . 'includes/class-wsm-admin.php';
 		require_once WSM_PLUGIN_DIR . 'includes/class-wsm-rest-controller.php';
 	}

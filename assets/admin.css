@@ -139,6 +139,29 @@
 	margin-top: 12px;
 }
 
+.wsm-downloads {
+	align-items: center;
+	display: flex;
+	flex: 1 1 100%;
+	flex-wrap: wrap;
+	gap: 6px;
+	margin-top: 2px;
+}
+
+.wsm-download-title {
+	color: var(--wsm-muted);
+	flex: 1 1 100%;
+	font-size: 12px;
+	font-weight: 600;
+}
+
+.wsm-downloads .button {
+	max-width: 100%;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
 .wsm-file-row {
 	align-items: center;
 	background: var(--wsm-bg-soft);

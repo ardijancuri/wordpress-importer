@@ -2,10 +2,16 @@
 	'use strict';
 
 	const api = window.WSMSiteMigrator;
+	const storageKeys = {
+		exportJobId: 'wsmExportJobId',
+		importJobId: 'wsmImportJobId',
+	};
 	const state = {
 		exportJobId: '',
 		importJobId: '',
+		importReady: false,
 		currentProgress: 0,
+		isDriving: false,
 	};
 
 	const els = {};
@@ -36,6 +42,7 @@
 
 		setProgress(0, 'Ready');
 		loadPreflight();
+		resumeStoredJobs();
 	});
 
 	function request(path, options) {
@@ -54,9 +61,19 @@
 
 		return fetch(api.restUrl + path, options).then(function (response) {
 			if (!response.ok) {
-				return response.json().then(function (body) {
-					throw new Error(body.message || response.statusText);
-				});
+				return response
+					.json()
+					.then(function (body) {
+						const error = new Error(body.message || response.statusText);
+						error.data = body.data || {};
+						throw error;
+					})
+					.catch(function (error) {
+						if (error instanceof SyntaxError) {
+							throw new Error(response.statusText);
+						}
+						throw error;
+					});
 			}
 
 			const contentType = response.headers.get('content-type') || '';
@@ -90,9 +107,9 @@
 
 	function startExport() {
 		setBusy(els['wsm-start-export'], true);
-		els['wsm-download-export'].classList.add('wsm-hidden');
-		renderSummary('Creating export package...');
-		setProgress(12, 'Exporting package', true);
+		clearDownloads();
+		renderSummary('Starting export job...');
+		setProgress(1, 'Starting export');
 
 		request('/export/start', {
 			method: 'POST',
@@ -100,14 +117,13 @@
 		})
 			.then(function (job) {
 				state.exportJobId = job.id;
+				saveStoredJob(storageKeys.exportJobId, job.id);
 				renderJob(job);
-				els['wsm-download-export'].href =
-					api.downloadUrl +
-					'?action=wsm_download_export&job_id=' +
-					encodeURIComponent(job.id) +
-					'&_wpnonce=' +
-					encodeURIComponent(api.downloadNonce);
-				els['wsm-download-export'].classList.remove('wsm-hidden');
+				return driveJob(job.id, ['completed']);
+			})
+			.then(function (job) {
+				renderJob(job);
+				renderDownloads(job);
 			})
 			.catch(function (error) {
 				renderError(error.message);
@@ -119,32 +135,41 @@
 
 	function uploadAndValidateImport() {
 		const fileInput = els['wsm-import-file'];
-		const file = fileInput.files && fileInput.files[0];
-		if (!file) {
-			renderError('Choose a migration package first.');
+		const files = Array.prototype.slice.call((fileInput.files || []));
+		if (!files.length) {
+			renderError('Choose the manifest and package part files first.');
 			return;
 		}
 
 		setBusy(els['wsm-upload-import'], true);
 		renderSummary('Preparing upload...');
-		setProgress(2, 'Preparing upload');
+		setProgress(1, 'Preparing upload');
 		state.importJobId = '';
+		state.importReady = false;
 		updateImportButton();
 
 		request('/import/upload/start', {
 			method: 'POST',
 			body: {
-				file_name: file.name,
-				file_size: file.size,
+				files: files.map(function (file) {
+					return {
+						name: file.name,
+						size: file.size,
+					};
+				}),
 			},
 		})
 			.then(function (data) {
 				state.importJobId = data.job_id;
-				return uploadChunks(file, data.job_id, data.chunk_size || 1048576);
+				saveStoredJob(storageKeys.importJobId, data.job_id);
+				if (data.job) {
+					renderJob(data.job);
+				}
+				return uploadFiles(files, data.job_id, data.chunk_size || 1048576);
 			})
 			.then(function () {
-				renderSummary('Validating package checksums...');
-				setProgress(82, 'Validating package', true);
+				renderSummary('Validating package...');
+				setProgress(60, 'Validating package', true);
 				return request('/import/validate', {
 					method: 'POST',
 					body: {
@@ -154,6 +179,14 @@
 			})
 			.then(function (job) {
 				renderJob(job);
+				if (job.status === 'validated') {
+					return job;
+				}
+				return driveJob(job.id, ['validated']);
+			})
+			.then(function (job) {
+				renderJob(job);
+				state.importReady = job.status === 'validated';
 				updateImportButton();
 			})
 			.catch(function (error) {
@@ -164,49 +197,60 @@
 			});
 	}
 
-	function uploadChunks(file, jobId, chunkSize) {
-		const total = Math.max(1, Math.ceil(file.size / chunkSize));
+	function uploadFiles(files, jobId, chunkSize) {
 		let chain = Promise.resolve();
 
-		for (let index = 0; index < total; index++) {
+		files.forEach(function (file, fileIndex) {
 			chain = chain.then(function () {
-				const start = index * chunkSize;
-				const end = Math.min(start + chunkSize, file.size);
-				renderSummary('Uploading package chunk ' + (index + 1) + ' of ' + total + '...');
-				setProgress(8 + (index / total) * 68, 'Uploading package');
-				return readAsBase64(file.slice(start, end)).then(function (chunk) {
-					return request('/import/upload/chunk', {
-						method: 'POST',
-						body: {
-							job_id: jobId,
-							index: index,
-							total: total,
-							chunk: chunk,
-						},
-					}).then(renderJob);
-				});
+				return uploadOneFile(file, fileIndex, jobId, chunkSize);
 			});
-		}
+		});
 
 		return chain;
 	}
 
-	function readAsBase64(blob) {
-		return new Promise(function (resolve, reject) {
-			const reader = new FileReader();
-			reader.onload = function () {
-				const result = String(reader.result || '');
-				resolve(result.split(',').pop());
-			};
-			reader.onerror = function () {
-				reject(new Error('Could not read upload chunk.'));
-			};
-			reader.readAsDataURL(blob);
-		});
+	function uploadOneFile(file, fileIndex, jobId, chunkSize) {
+		let offset = 0;
+
+		function next() {
+			if (offset >= file.size) {
+				return Promise.resolve();
+			}
+
+			const end = Math.min(offset + chunkSize, file.size);
+			const form = new FormData();
+			form.append('job_id', jobId);
+			form.append('file_index', String(fileIndex));
+			form.append('file_name', file.name);
+			form.append('offset', String(offset));
+			form.append('total_size', String(file.size));
+			form.append('chunk', file.slice(offset, end), file.name + '.chunk');
+
+			renderSummary('Uploading ' + file.name + ' (' + formatBytes(offset) + ' of ' + formatBytes(file.size) + ')...');
+
+			return request('/import/upload/chunk', {
+				method: 'POST',
+				body: form,
+			})
+				.then(function (job) {
+					renderJob(job);
+					offset = end;
+					return next();
+				})
+				.catch(function (error) {
+					if (error.data && typeof error.data.expected_offset !== 'undefined') {
+						offset = Number(error.data.expected_offset) || 0;
+						return next();
+					}
+					throw error;
+				});
+		}
+
+		return next();
 	}
 
 	function updateImportButton() {
-		els['wsm-start-import'].disabled = !state.importJobId || els['wsm-confirmation'].value.trim().toUpperCase() !== 'REPLACE SITE';
+		els['wsm-start-import'].disabled = !state.importJobId || !state.importReady || els['wsm-confirmation'].value.trim().toUpperCase() !== 'REPLACE SITE';
 	}
 
 	function startImport() {
@@ -216,8 +260,8 @@
 		}
 
 		setBusy(els['wsm-start-import'], true);
-		renderSummary('Replacing destination site...');
-		setProgress(88, 'Replacing site', true);
+		renderSummary('Starting import job...');
+		setProgress(70, 'Starting import', true);
 
 		request('/import/start', {
 			method: 'POST',
@@ -226,6 +270,10 @@
 				confirmation: els['wsm-confirmation'].value,
 			},
 		})
+			.then(function (job) {
+				renderJob(job);
+				return driveJob(job.id, ['completed']);
+			})
 			.then(renderJob)
 			.catch(function (error) {
 				renderError(error.message);
@@ -236,6 +284,87 @@
 			});
 	}
 
+	function resumeStoredJobs() {
+		const exportJobId = window.localStorage.getItem(storageKeys.exportJobId);
+		if (exportJobId) {
+			request('/job/' + encodeURIComponent(exportJobId))
+				.then(function (job) {
+					state.exportJobId = job.id;
+					renderJob(job);
+					if (job.status === 'completed') {
+						renderDownloads(job);
+					} else if (job.status === 'running') {
+						setBusy(els['wsm-start-export'], true);
+						driveJob(job.id, ['completed'])
+							.then(function (completedJob) {
+								renderJob(completedJob);
+								renderDownloads(completedJob);
+							})
+							.finally(function () {
+								setBusy(els['wsm-start-export'], false);
+							});
+					}
+				})
+				.catch(function () {});
+		}
+
+		const importJobId = window.localStorage.getItem(storageKeys.importJobId);
+		if (importJobId) {
+			request('/job/' + encodeURIComponent(importJobId))
+				.then(function (job) {
+					state.importJobId = job.id;
+					state.importReady = job.status === 'validated';
+					renderJob(job);
+					updateImportButton();
+					if (job.status === 'validating') {
+						driveJob(job.id, ['validated']).then(function (validatedJob) {
+							state.importReady = validatedJob.status === 'validated';
+							renderJob(validatedJob);
+							updateImportButton();
+						});
+					} else if (job.status === 'importing') {
+						setBusy(els['wsm-start-import'], true);
+						driveJob(job.id, ['completed'])
+							.then(renderJob)
+							.finally(function () {
+								setBusy(els['wsm-start-import'], false);
+								updateImportButton();
+							});
+					}
+				})
+				.catch(function () {});
+		}
+	}
+
+	function saveStoredJob(key, jobId) {
+		try {
+			window.localStorage.setItem(key, jobId);
+		} catch (error) {}
+	}
+
+	function driveJob(jobId, completeStatuses) {
+		state.isDriving = true;
+
+		function tick() {
+			return request('/job/' + encodeURIComponent(jobId) + '/run', {
+				method: 'POST',
+				body: {},
+			}).then(function (job) {
+				renderJob(job);
+				if (job.status === 'failed') {
+					throw new Error(job.errors && job.errors.length ? job.errors[0].message : 'Migration job failed.');
+				}
+				if (completeStatuses.indexOf(job.status) !== -1) {
+					state.isDriving = false;
+					return job;
+				}
+				return delay(job.locked ? 1200 : 350).then(tick);
+			});
+		}
+
+		return tick();
+	}
+
 	function renderJob(job) {
 		const summary = [
 			['Job', job.id],
@@ -244,15 +373,38 @@
 		if (job.phase) {
 			summary.push(['Phase', job.phase]);
 		}
+		if (typeof job.progress !== 'undefined') {
+			summary.push(['Progress', Math.round(Number(job.progress) || 0) + '%']);
+		}
 		if (job.package_size) {
 			summary.push(['Package', formatBytes(job.package_size)]);
+		}
+		if (job.expected_size) {
+			summary.push(['Expected upload', formatBytes(job.expected_size)]);
 		}
 		if (job.uploaded_bytes) {
 			summary.push(['Uploaded', formatBytes(job.uploaded_bytes)]);
 		}
+		if (job.total_bytes) {
+			summary.push(['Estimated content', formatBytes(job.total_bytes)]);
+		}
+		if (job.downloads && job.downloads.length) {
+			summary.push(['Package files', String(job.downloads.length)]);
+		}
+		if (job.package_parts && job.package_parts.length) {
+			summary.push(['Parts', String(job.package_parts.length)]);
+		}
 		if (job.manifest_summary) {
 			summary.push(['Source', job.manifest_summary.source_url || 'unknown']);
-			summary.push(['Package contents', job.manifest_summary.table_count + ' tables, ' + job.manifest_summary.file_count + ' files']);
+			summary.push([
+				'Package contents',
+				(job.manifest_summary.table_count || 0) +
+					' tables, ' +
+					(job.manifest_summary.file_count || 0) +
+					' files, ' +
+					(job.manifest_summary.part_count || 0) +
+					' parts',
+			]);
 		}
 		if (job.errors && job.errors.length) {
 			summary.push(['Error', job.errors[0].message]);
@@ -266,6 +418,42 @@
 			.join('');
 		els['wsm-log'].textContent = (job.log || []).join('\n');
 		updateProgressFromJob(job);
+	}
+
+	function renderDownloads(job) {
+		clearDownloads();
+		const downloads = job.downloads || [];
+		if (!downloads.length) {
+			return;
+		}
+
+		const title = document.createElement('span');
+		title.className = 'wsm-download-title';
+		title.textContent = 'Download all package files:';
+		els['wsm-download-export'].appendChild(title);
+
+		downloads.forEach(function (download) {
+			const link = document.createElement('a');
+			link.className = 'button';
+			link.href =
+				api.downloadUrl +
+				'?action=wsm_download_export&job_id=' +
+				encodeURIComponent(job.id) +
+				'&part=' +
+				encodeURIComponent(download.name) +
+				'&_wpnonce=' +
+				encodeURIComponent(api.downloadNonce);
+			link.download = download.name;
+			link.textContent = download.name + ' (' + formatBytes(download.size) + ')';
+			els['wsm-download-export'].appendChild(link);
+		});
+
+		els['wsm-download-export'].classList.remove('wsm-hidden');
+	}
+
+	function clearDownloads() {
+		els['wsm-download-export'].innerHTML = '';
+		els['wsm-download-export'].classList.add('wsm-hidden');
 	}
 
 	function renderSummary(message) {
@@ -299,8 +487,8 @@
 			return;
 		}
 
-		if (job.status === 'running') {
-			setProgress(job.phase === 'files' ? 72 : 35, job.phase === 'files' ? 'Adding files' : 'Exporting database', true);
+		if (typeof job.progress !== 'undefined') {
+			setProgress(Number(job.progress) || 0, labelForJob(job), isActiveJob(job));
 			return;
 		}
 
@@ -308,29 +496,44 @@
 			const expected = Number(job.expected_size || 0);
 			const uploaded = Number(job.uploaded_bytes || 0);
 			const ratio = expected > 0 ? Math.min(uploaded / expected, 1) : 0;
-			setProgress(8 + ratio * 68, 'Uploading package');
+			setProgress(1 + ratio * 59, 'Uploading package');
 			return;
 		}
 
 		if (job.status === 'uploaded') {
-			setProgress(78, 'Upload complete');
+			setProgress(60, 'Upload complete');
 			return;
 		}
 
 		if (job.status === 'validated') {
-			setProgress(85, 'Package validated');
-			return;
+			setProgress(70, 'Package validated');
 		}
+	}
 
-		if (job.status === 'importing') {
-			const phaseProgress = {
-				validating: 86,
-				extracting: 90,
-				database: 94,
-				files: 98,
-			};
-			setProgress(phaseProgress[job.phase] || 88, job.phase ? 'Importing ' + job.phase : 'Importing site', true);
+	function labelForJob(job) {
+		if (job.status === 'uploading') {
+			return 'Uploading package';
 		}
+		if (job.status === 'validating') {
+			return 'Validating package';
+		}
+		if (job.status === 'uploaded') {
+			return 'Upload complete';
+		}
+		if (job.status === 'importing') {
+			return job.phase ? 'Importing ' + job.phase : 'Importing site';
+		}
+		if (job.status === 'running') {
+			return job.phase ? 'Exporting ' + job.phase : 'Exporting site';
+		}
+		if (job.status === 'validated') {
+			return 'Package validated';
+		}
+		return job.phase || job.status || 'Ready';
+	}
+
+	function isActiveJob(job) {
+		return ['running', 'validating', 'importing'].indexOf(job.status) !== -1;
 	}
 
 	function setProgress(percent, label, indeterminate, failed) {
@@ -353,6 +556,12 @@
 			unit++;
 		}
 		return value.toFixed(unit ? 1 : 0) + ' ' + units[unit];
+	}
+
+	function delay(ms) {
+		return new Promise(function (resolve) {
+			window.setTimeout(resolve, ms);
+		});
 	}
 
 	function escapeHtml(value) {

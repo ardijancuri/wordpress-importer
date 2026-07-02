@@ -83,6 +83,16 @@ class WSM_REST_Controller {
 
 		register_rest_route(
 			WSM_Plugin::REST_NAMESPACE,
+			'/export/download/(?P<job_id>[a-zA-Z0-9-]+)/(?P<part>[a-zA-Z0-9._-]+)',
+			array(
+				'methods'             => WP_REST_Server::READABLE,
+				'callback'            => array( $this, 'download_export' ),
+				'permission_callback' => array( $this, 'permissions_check' ),
+			)
+		);
+
+		register_rest_route(
+			WSM_Plugin::REST_NAMESPACE,
 			'/import/upload/start',
 			array(
 				'methods'             => WP_REST_Server::CREATABLE,
@@ -135,8 +145,30 @@ class WSM_REST_Controller {
 			WSM_Plugin::REST_NAMESPACE,
 			'/job/(?P<job_id>[a-zA-Z0-9-]+)',
 			array(
-				'methods'             => WP_REST_Server::DELETABLE,
-				'callback'            => array( $this, 'delete_job' ),
+				array(
+					'methods'             => WP_REST_Server::READABLE,
+					'callback'            => array( $this, 'job_status' ),
+					'permission_callback' => array( $this, 'permissions_check' ),
+				),
+				array(
+					'methods'             => WP_REST_Server::CREATABLE,
+					'callback'            => array( $this, 'run_job' ),
+					'permission_callback' => array( $this, 'permissions_check' ),
+				),
+				array(
+					'methods'             => WP_REST_Server::DELETABLE,
+					'callback'            => array( $this, 'delete_job' ),
+					'permission_callback' => array( $this, 'permissions_check' ),
+				),
+			)
+		);
+
+		register_rest_route(
+			WSM_Plugin::REST_NAMESPACE,
+			'/job/(?P<job_id>[a-zA-Z0-9-]+)/run',
+			array(
+				'methods'             => WP_REST_Server::CREATABLE,
+				'callback'            => array( $this, 'run_job' ),
 				'permission_callback' => array( $this, 'permissions_check' ),
 			)
 		);
@@ -172,16 +204,8 @@ class WSM_REST_Controller {
 			return $job;
 		}
 
-		$archive = new WSM_Archive( $this->job_store, $this->logger );
-		$completed = false;
-		$this->register_fatal_guard( $job['id'], $completed );
-		try {
-			$result = $archive->export( $job['id'] );
-			$completed = true;
-		} catch ( Throwable $e ) {
-			$this->record_runtime_failure( $job['id'], $e );
-			return new WP_Error( 'wsm_export_runtime_error', $e->getMessage(), array( 'status' => 500 ) );
-		}
+		$batch  = new WSM_Batch_Migrator( $this->job_store, $this->logger );
+		$result = $batch->initialize_export( $job['id'] );
 
 		if ( is_wp_error( $result ) ) {
 			return $result;
@@ -212,7 +236,7 @@ class WSM_REST_Controller {
 	 * @return WP_REST_Response|WP_Error
 	 */
 	public function download_export( WP_REST_Request $request ) {
-		$result = $this->stream_export_package( $request['job_id'] );
+		$result = $this->stream_export_package( $request['job_id'], isset( $request['part'] ) ? $request['part'] : '' );
 		if ( is_wp_error( $result ) ) {
 			return $result;
 		}
@@ -233,7 +257,8 @@ class WSM_REST_Controller {
 		check_admin_referer( 'wsm_download_export' );
 
 		$job_id = isset( $_GET['job_id'] ) ? sanitize_text_field( wp_unslash( $_GET['job_id'] ) ) : '';
-		$result = $this->stream_export_package( $job_id );
+		$part   = isset( $_GET['part'] ) ? sanitize_file_name( wp_unslash( $_GET['part'] ) ) : '';
+		$result = $this->stream_export_package( $job_id, $part );
 
 		if ( is_wp_error( $result ) ) {
 			wp_die( esc_html( $result->get_error_message() ), esc_html__( 'Export download failed', 'wp-site-migrator' ), array( 'response' => 400 ) );
@@ -248,7 +273,7 @@ class WSM_REST_Controller {
 	 * @param string $job_id Job id.
 	 * @return true|WP_Error
 	 */
-	private function stream_export_package( $job_id ) {
+	private function stream_export_package( $job_id, $part = '' ) {
 		$job = $this->job_store->get_job( $job_id );
 		if ( is_wp_error( $job ) ) {
 			return $job;
@@ -258,12 +283,21 @@ class WSM_REST_Controller {
 			return new WP_Error( 'wsm_export_not_ready', __( 'Export package is not ready yet.', 'wp-site-migrator' ), array( 'status' => 409 ) );
 		}
 
-		$path = $this->job_store->get_package_path( $job_id );
+		if ( ! empty( $job['package_format'] ) && WSM_Batch_Migrator::PACKAGE_FORMAT === $job['package_format'] ) {
+			$batch = new WSM_Batch_Migrator( $this->job_store, $this->logger );
+			$path  = $batch->get_export_artifact_path( $job_id, $part );
+			if ( is_wp_error( $path ) ) {
+				return $path;
+			}
+		} else {
+			$path = $this->job_store->get_package_path( $job_id );
+		}
+
 		if ( ! is_file( $path ) || ! is_readable( $path ) ) {
 			return new WP_Error( 'wsm_export_missing', __( 'Export package file was not found.', 'wp-site-migrator' ), array( 'status' => 404 ) );
 		}
 
-		$file_name = $this->export_file_name();
+		$file_name = $part ? sanitize_file_name( $part ) : $this->export_file_name();
 		$file_size = filesize( $path );
 		if ( false === $file_size ) {
 			return new WP_Error( 'wsm_export_size_failed', __( 'Could not read export package size.', 'wp-site-migrator' ), array( 'status' => 500 ) );
@@ -283,7 +317,7 @@ class WSM_REST_Controller {
 
 		status_header( 200 );
 		nocache_headers();
-		header( 'Content-Type: application/zip' );
+		header( 'Content-Type: ' . ( preg_match( '/\.json$/i', $file_name ) ? 'application/json' : 'application/zip' ) );
 		header( 'Content-Transfer-Encoding: binary' );
 		header( 'Content-Disposition: attachment; filename="' . $file_name . '"' );
 		header( 'Content-Length: ' . $file_size );
@@ -342,91 +376,60 @@ class WSM_REST_Controller {
 	 */
 	public function start_import_upload( WP_REST_Request $request ) {
 		$params   = $request->get_json_params();
-		$file_name = isset( $params['file_name'] ) ? sanitize_file_name( $params['file_name'] ) : 'package.zip';
-		$file_size = isset( $params['file_size'] ) ? absint( $params['file_size'] ) : 0;
+		$files    = isset( $params['files'] ) && is_array( $params['files'] ) ? $params['files'] : array();
+
+		if ( empty( $files ) && ! empty( $params['file_name'] ) ) {
+			$files[] = array(
+				'name' => sanitize_file_name( $params['file_name'] ),
+				'size' => isset( $params['file_size'] ) ? absint( $params['file_size'] ) : 0,
+			);
+		}
 
 		$job = $this->job_store->create_job( 'import' );
 		if ( is_wp_error( $job ) ) {
 			return $job;
 		}
 
-		$this->job_store->update_job(
-			$job['id'],
-			array(
-				'status'         => 'uploading',
-				'phase'          => 'upload',
-				'file_name'      => $file_name,
-				'expected_size'  => $file_size,
-				'uploaded_bytes' => 0,
-				'chunk_count'    => 0,
-			)
-		);
+		$batch  = new WSM_Batch_Migrator( $this->job_store, $this->logger );
+		$result = $batch->initialize_import_upload( $job['id'], $files );
+		if ( is_wp_error( $result ) ) {
+			return $result;
+		}
 
 		return rest_ensure_response(
 			array(
 				'job_id'     => $job['id'],
-				'chunk_size' => 1024 * 1024,
+				'chunk_size' => WSM_Batch_Migrator::DEFAULT_UPLOAD_CHUNK_SIZE,
+				'job'        => $this->format_job_response( $result ),
 			)
 		);
 	}
 
 	/**
-	 * Upload one base64 chunk.
+	 * Upload one binary package chunk.
 	 *
 	 * @param WP_REST_Request $request Request.
 	 * @return WP_REST_Response|WP_Error
 	 */
 	public function upload_import_chunk( WP_REST_Request $request ) {
-		$params = $request->get_json_params();
-		$job_id = isset( $params['job_id'] ) ? sanitize_text_field( $params['job_id'] ) : '';
-		$index  = isset( $params['index'] ) ? absint( $params['index'] ) : 0;
-		$total  = isset( $params['total'] ) ? absint( $params['total'] ) : 0;
-		$chunk  = isset( $params['chunk'] ) ? (string) $params['chunk'] : '';
+		$params     = $request->get_params();
+		$file_params = $request->get_file_params();
+		$job_id     = isset( $params['job_id'] ) ? sanitize_text_field( wp_unslash( $params['job_id'] ) ) : '';
+		$file_index = isset( $params['file_index'] ) ? absint( $params['file_index'] ) : 0;
+		$file_name  = isset( $params['file_name'] ) ? sanitize_file_name( wp_unslash( $params['file_name'] ) ) : '';
+		$offset     = isset( $params['offset'] ) ? (int) $params['offset'] : 0;
 
-		$job = $this->job_store->get_job( $job_id );
-		if ( is_wp_error( $job ) ) {
-			return $job;
-		}
-
-		if ( empty( $chunk ) || $total < 1 ) {
+		if ( empty( $file_params['chunk']['tmp_name'] ) ) {
 			return new WP_Error( 'wsm_chunk_invalid', __( 'Upload chunk is invalid.', 'wp-site-migrator' ), array( 'status' => 400 ) );
 		}
 
-		$data = base64_decode( $chunk, true );
-		if ( false === $data ) {
-			return new WP_Error( 'wsm_chunk_decode_failed', __( 'Upload chunk could not be decoded.', 'wp-site-migrator' ), array( 'status' => 400 ) );
+		$batch  = new WSM_Batch_Migrator( $this->job_store, $this->logger );
+		$result = $batch->receive_upload_chunk( $job_id, $file_index, $file_name, $offset, $file_params['chunk']['tmp_name'] );
+		if ( is_wp_error( $result ) ) {
+			return $result;
 		}
 
-		$package_path = $this->job_store->get_package_path( $job_id );
-		$mode         = 0 === $index ? 'wb' : 'ab';
-		$handle       = fopen( $package_path, $mode );
-		if ( ! $handle ) {
-			return new WP_Error( 'wsm_upload_write_failed', __( 'Could not write uploaded package chunk.', 'wp-site-migrator' ) );
-		}
-
-		fwrite( $handle, $data );
-		fclose( $handle );
-
-		$uploaded = filesize( $package_path );
-		$complete = ( $index + 1 ) >= $total;
-
-		$updated = $this->job_store->update_job(
-			$job_id,
-			array(
-				'status'         => $complete ? 'uploaded' : 'uploading',
-				'phase'          => $complete ? 'uploaded' : 'upload',
-				'uploaded_bytes' => $uploaded,
-				'chunk_count'    => $index + 1,
-				'total_chunks'   => $total,
-				'package_sha256' => $complete ? hash_file( 'sha256', $package_path ) : '',
-			)
-		);
-
-		if ( is_wp_error( $updated ) ) {
-			return $updated;
-		}
-
-		return rest_ensure_response( $this->format_job_response( $updated ) );
+		return rest_ensure_response( $this->format_job_response( $result ) );
 	}
 
 	/**
@@ -439,13 +442,8 @@ class WSM_REST_Controller {
 		$params = $request->get_json_params();
 		$job_id = isset( $params['job_id'] ) ? sanitize_text_field( $params['job_id'] ) : '';
 
-		$archive  = new WSM_Archive( $this->job_store, $this->logger );
-		$manifest = $archive->validate_import_package( $job_id );
-		if ( is_wp_error( $manifest ) ) {
-			return $manifest;
-		}
-
-		$job = $this->job_store->get_job( $job_id );
+		$batch = new WSM_Batch_Migrator( $this->job_store, $this->logger );
+		$job   = $batch->initialize_validation( $job_id );
 		if ( is_wp_error( $job ) ) {
 			return $job;
 		}
@@ -469,16 +467,8 @@ class WSM_REST_Controller {
 			return new WP_Error( 'wsm_confirmation_required', __( 'Type REPLACE SITE to confirm destructive import.', 'wp-site-migrator' ), array( 'status' => 400 ) );
 		}
 
-		$archive = new WSM_Archive( $this->job_store, $this->logger );
-		$completed = false;
-		$this->register_fatal_guard( $job_id, $completed );
-		try {
-			$result = $archive->import( $job_id, $target_url );
-			$completed = true;
-		} catch ( Throwable $e ) {
-			$this->record_runtime_failure( $job_id, $e );
-			return new WP_Error( 'wsm_import_runtime_error', $e->getMessage(), array( 'status' => 500 ) );
-		}
+		$batch  = new WSM_Batch_Migrator( $this->job_store, $this->logger );
+		$result = $batch->initialize_import( $job_id, $target_url );
 
 		if ( is_wp_error( $result ) ) {
 			return $result;
@@ -509,6 +499,25 @@ class WSM_REST_Controller {
 				),
 			)
 		);
+	}
+
+	/**
+	 * Run a resumable job batch.
+	 *
+	 * @param WP_REST_Request $request Request.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public function run_job( WP_REST_Request $request ) {
+		$batch = new WSM_Batch_Migrator( $this->job_store, $this->logger );
+		$completed = false;
+		$this->register_fatal_guard( $request['job_id'], $completed );
+		$job = $batch->run_job( $request['job_id'] );
+		$completed = true;
+		if ( is_wp_error( $job ) ) {
+			return $job;
+		}
+
+		return rest_ensure_response( $this->format_job_response( $job ) );
 	}
 
 	/**
@@ -594,6 +603,16 @@ class WSM_REST_Controller {
 	private function format_job_response( array $job ) {
 		$job['log'] = $this->logger->read( $job['id'] );
 		unset( $job['package_path'] );
+		unset( $job['target_url'] );
+		unset( $job['lock_token'] );
+		unset( $job['cursor'] );
+		unset( $job['database_tables'] );
+
+		if ( ! empty( $job['upload_files'] ) && is_array( $job['upload_files'] ) ) {
+			foreach ( $job['upload_files'] as $index => $file ) {
+				unset( $job['upload_files'][ $index ]['path'] );
+			}
+		}
 
 		return $job;
 	}

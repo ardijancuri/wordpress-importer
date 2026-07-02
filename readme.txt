@@ -4,7 +4,7 @@ Tags: migration, export, import, database, backup
 Requires at least: 6.0
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 0.1.6
+Stable tag: 0.2.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -14,7 +14,9 @@ Export and import a complete single-site WordPress install with database, upload
 
 WP Site Migrator creates a downloadable migration package on the source site and imports that package on a destination site. It is designed for single-site WordPress migrations, including local-to-live moves.
 
-Version 0.1.0 intentionally focuses on package-based migrations. It does not support multisite, direct server-to-server push, retained destination backups, or WordPress core replacement.
+For larger sites, the plugin exports a manifest JSON file plus numbered ZIP part files. Download every generated package file and select all of them together on the destination import screen.
+
+This version intentionally focuses on package-based migrations. It does not support multisite, direct server-to-server push, retained destination backups, or WordPress core replacement.
 
 == Migration Scope ==
 
@@ -37,6 +39,9 @@ Only administrators with `manage_options` can use the plugin. REST requests requ
 3. Go to Tools > Site Migrator.
 
 == Changelog ==
+
+= 0.2.0 =
+Add resumable heavy-site migration support with browser/WP-Cron batch jobs, multipart export packages, binary chunk uploads, real progress tracking, and stricter large-site preflight checks.
 
 = 0.1.6 =
 Remove the Destination URL field and always use the current destination site URL automatically during import.
